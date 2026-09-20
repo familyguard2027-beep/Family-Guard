@@ -252,6 +252,8 @@ def bind_device(request):
             existing_device.hidden_on_child = False
             existing_device.is_active = False
             existing_device.last_seen = None
+            existing_device.monitoring_permissions = {}
+            existing_device.child_notifications_enabled = False
             existing_device.save()
             created = False
             device = existing_device
@@ -297,16 +299,27 @@ def child_consent_view(request, pairing_token):
 
     if request.method == 'POST':
         accepted = request.POST.get('consent_accepted') == 'on'
-        if accepted:
+        selected_permissions = request.POST.getlist('permissions')
+        allowed_permissions = {
+            'presence': 'Device online/offline status and last seen time',
+            'battery': 'Battery level',
+            'screen': 'Screen sharing when separately started and approved',
+            'activity': 'Activity shared by an explicitly authorized native app',
+        }
+        permissions = {key: key in selected_permissions for key in allowed_permissions}
+        notifications_enabled = request.POST.get('child_notifications') == 'on'
+        if accepted and permissions['presence']:
             device.consent_accepted = True
             device.consent_required = True
             device.visible_on_child = True
             device.hidden_on_child = False
             device.is_active = True
             device.last_seen = timezone.now()
-            device.save(update_fields=['consent_accepted', 'consent_required', 'visible_on_child', 'hidden_on_child', 'is_active', 'last_seen'])
+            device.monitoring_permissions = permissions
+            device.child_notifications_enabled = notifications_enabled
+            device.save(update_fields=['consent_accepted', 'consent_required', 'visible_on_child', 'hidden_on_child', 'is_active', 'last_seen', 'monitoring_permissions', 'child_notifications_enabled'])
             return HttpResponseRedirect(f'/child/dashboard/{device.pairing_token}/')
-        return render(request, 'child/consent.html', {'device': device, 'error': 'Consent required to activate safety monitoring.'})
+        return render(request, 'child/consent.html', {'device': device, 'error': 'Accept the consent statement and device status permission to continue.'})
 
     return render(request, 'child/consent.html', {'device': device})
 

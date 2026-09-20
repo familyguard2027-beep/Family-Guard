@@ -62,12 +62,15 @@ class ConsentFlowTests(TestCase):
 
         consent_response = self.client.post(
             reverse('child_consent', args=[device.pairing_token]),
-            {'consent_accepted': 'on'},
+            {'consent_accepted': 'on', 'permissions': ['presence', 'battery'], 'child_notifications': 'on'},
         )
         self.assertRedirects(consent_response, f'/child/dashboard/{device.pairing_token}/', fetch_redirect_response=False)
         device.refresh_from_db()
         self.assertTrue(device.consent_accepted)
         self.assertTrue(device.is_active)
+        self.assertTrue(device.monitoring_permissions['presence'])
+        self.assertTrue(device.monitoring_permissions['battery'])
+        self.assertTrue(device.child_notifications_enabled)
 
     def test_child_heartbeat_and_disconnect_are_token_scoped(self):
         device = Device.objects.create(

@@ -18,6 +18,8 @@ class Device(models.Model):
     is_active = models.BooleanField(default=False)
     enrolled_at = models.DateTimeField(auto_now_add=True)
     last_seen = models.DateTimeField(null=True, blank=True)
+    monitoring_permissions = models.JSONField(default=dict, blank=True)
+    child_notifications_enabled = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['name']

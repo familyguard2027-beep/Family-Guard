@@ -637,7 +637,7 @@ body {
   .device-name, .device-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .top-center, .top-actions { display: none; }
   .mobile-menu-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: 0 0 auto; width: auto; min-height: 38px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--page); color: var(--text); font-size: 12px; font-weight: 700; }
-  .mobile-menu { position: absolute; top: calc(100% + 1px); left: 10px; right: 10px; display: none; max-height: calc(100vh - 78px); overflow-y: auto; padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 0 0 14px 14px; box-shadow: 0 14px 30px rgba(38,50,56,.16); z-index: 1100; }
+  .mobile-menu { position: static; flex: 0 0 100%; order: 10; width: 100%; max-height: calc(100vh - 78px); overflow-y: auto; padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 0 0 14px 14px; box-shadow: 0 14px 30px rgba(38,50,56,.16); }
   .mobile-menu.show { display: block; }
   .mobile-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
   .mobile-nav .nav-link { margin: 0; min-width: 0; padding: 11px 10px; }
@@ -716,4 +716,65 @@ body {
   .mobile-menu-action span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mobile-menu-action.danger { color: var(--red); }
   .mobile-menu-action.danger i { color: var(--red); }
+}
+
+body { overflow-x: hidden; }
+.top-actions { margin-left: auto; flex: 0 0 auto; }
+.top-center { flex: 0 0 auto; }
+.nav-link { min-width: 0; }
+
+@media (max-width: 900px) {
+  .app-top { width: 100%; overflow: visible; }
+  .mobile-menu-toggle, .mobile-menu { display: inline-flex; }
+  .mobile-menu { display: none; }
+  .mobile-menu.show { display: block; }
+  .app-top:has(.mobile-menu.show) { height: auto; flex-wrap: wrap; }
+  .mobile-nav .nav-link { display: flex; align-items: center; min-height: 44px; }
+  .mobile-nav .nav-link span { min-width: 0; }
+  .mobile-menu-action { min-height: 44px; }
+  .pagebar { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .page-content { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .app-top { padding: 7px 8px; gap: 6px; }
+  .back-arrow { width: 34px; height: 34px; font-size: 21px; }
+  .android { width: 31px; height: 31px; flex-basis: 31px; font-size: 17px; }
+  .device-name { font-size: 12px; }
+  .device-meta { font-size: 9px; }
+  .mobile-menu-toggle { min-height: 36px; padding: 6px 8px; font-size: 11px; }
+  .mobile-menu { left: 6px; right: 6px; padding: 8px; }
+  .mobile-nav, .mobile-menu-actions { grid-template-columns: 1fr; }
+  .mobile-nav .nav-link, .mobile-menu-action { min-height: 42px; padding: 10px; }
+  .pagebar { height: 48px; padding: 0 12px; font-size: 16px; }
+  .page-content { padding: 10px 8px 24px; }
+  .notice { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 10px; font-size: 12px; }
+  .notice .bind-btn { padding: 9px 10px; font-size: 11px; }
+  .stats { gap: 8px; margin-bottom: 12px; }
+  .stat { padding: 11px 10px; border-radius: 10px; }
+  .stat i { font-size: 19px; }
+  .stat small { max-width: 66px; font-size: 10px; }
+  .stat strong { font-size: 19px; }
+  .panel { border-radius: 11px; }
+  .panel-head { padding: 12px; }
+  .panel-title { font-size: 17px; }
+  .panel-head .bind-btn, .panel-head .try-btn { width: 100%; }
+  .search-filter { gap: 8px; padding: 10px; }
+  .filter-select { width: 100%; flex: 1 1 100%; }
+  .table { min-width: 560px; }
+  .modal-dialog { margin: 8px; }
+  .modal-body { max-height: 68vh; }
+  .child-dashboard .panel { padding: 16px !important; }
+  .child-dashboard h1 { font-size: 23px; overflow-wrap: anywhere; }
+  .child-dashboard .d-flex { align-items: stretch; }
+  .child-dashboard .d-flex > .btn { width: 100%; }
+}
+
+@media (max-width: 340px) {
+  .device-meta { display: none; }
+  .mobile-menu-toggle span { display: none; }
+  .mobile-menu-toggle { width: 36px; padding: 6px; }
+  .stats { grid-template-columns: 1fr; }
+  .notice { grid-template-columns: 1fr; }
+  .notice .bind-btn { width: 100%; }
 }
