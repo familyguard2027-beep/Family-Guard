@@ -1,4 +1,4 @@
-const CACHE_NAME = 'family-guard-v2';
+const CACHE_NAME = 'family-guard-v3';
 const ASSETS = [
   '/',
   '/static/css/app.css',
@@ -25,9 +25,16 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  if (event.request.method === 'GET') {
-    event.respondWith(
-      caches.match(event.request).then(cached => cached || fetch(event.request))
-    );
+  if (event.request.method !== 'GET') return;
+
+  const requestUrl = new URL(event.request.url);
+  const isNavigation = event.request.mode === 'navigate';
+  const isLogin = requestUrl.pathname === '/login/';
+
+  if (isNavigation || isLogin) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    return;
   }
+
+  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request)));
 });

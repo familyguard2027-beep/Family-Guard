@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 from django.db.models import Count, Max
 from django.db import IntegrityError
@@ -307,6 +308,7 @@ def index(request):
     return render(request, 'index.html')
 
 
+@never_cache
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
