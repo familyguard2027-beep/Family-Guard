@@ -1,4 +1,4 @@
-const CACHE_NAME = 'family-guard-v3';
+const CACHE_NAME = 'family-guard-v4';
 const ASSETS = [
   '/',
   '/static/css/app.css',
@@ -33,6 +33,16 @@ self.addEventListener('fetch', event => {
 
   if (isNavigation || isLogin) {
     event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    return;
+  }
+
+  const isStaticAsset = requestUrl.pathname.startsWith('/static/');
+  if (isStaticAsset) {
+    event.respondWith(fetch(event.request).then(response => {
+      const copy = response.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+      return response;
+    }).catch(() => caches.match(event.request)));
     return;
   }
 

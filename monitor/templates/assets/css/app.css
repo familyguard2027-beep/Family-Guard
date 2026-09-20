@@ -614,6 +614,17 @@ body {
     display: none;
   }
 }
+
+body.mobile-shell .top-center,
+body.mobile-shell .top-actions {
+  display: none !important;
+}
+body.mobile-shell .mobile-menu-toggle {
+  display: inline-flex !important;
+}
+body.mobile-shell .mobile-menu.show {
+  display: block !important;
+}
 @media (max-width: 600px) {
   .app-top {
     height: 65px;

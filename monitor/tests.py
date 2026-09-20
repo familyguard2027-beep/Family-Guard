@@ -46,6 +46,10 @@ class LoginTests(TestCase):
 
 
 class ConsentFlowTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('admin', 'admin@example.com', 'password')
+        self.client.force_login(self.admin)
+
     def test_bound_device_waits_for_child_consent(self):
         response = self.client.post(reverse('bind-device'), {
             'device_id': 'child-001',
@@ -56,13 +60,15 @@ class ConsentFlowTests(TestCase):
             'risk_level': 'Low',
         })
         self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.json()['consent_url'].startswith('/child/consent/'))
+        self.assertRegex(response.json()['device']['pairing_code'], r'^PAIR-[0-9A-F]+$')
         device = Device.objects.get(device_id='child-001')
         self.assertFalse(device.consent_accepted)
         self.assertFalse(device.is_active)
 
         consent_response = self.client.post(
             reverse('child_consent', args=[device.pairing_token]),
-            {'consent_accepted': 'on', 'permissions': ['presence', 'battery'], 'child_notifications': 'on'},
+            {'pairing_code': device.pairing_code, 'consent_accepted': 'on', 'permissions': ['presence', 'battery'], 'child_notifications': 'on'},
         )
         self.assertRedirects(consent_response, f'/child/dashboard/{device.pairing_token}/', fetch_redirect_response=False)
         device.refresh_from_db()
@@ -91,6 +97,8 @@ class ConsentFlowTests(TestCase):
 
 class FamilyGuardApiTests(TestCase):
     def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('admin', 'admin@example.com', 'password')
+        self.client.force_login(self.admin)
         self.device = Device.objects.create(
             device_id='device-001',
             name="John's Galaxy S23",

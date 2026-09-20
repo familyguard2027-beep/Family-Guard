@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Family Guard Companion"
+            android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium" />
+        <TextView
+            android:id="@+id/disclosure"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Review each permission. Android will show a separate system prompt or Settings screen. Nothing is enabled silently."
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+        <CheckBox android:id="@+id/consent" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="I reviewed and consent to the selected permissions." />
+        <Button android:id="@+id/notifications" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Allow notifications" />
+        <Button android:id="@+id/sms" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Request SMS permissions" />
+        <Button android:id="@+id/calls" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Request call permissions" />
+        <Button android:id="@+id/usage" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Open app-usage access settings" />
+        <Button android:id="@+id/screen" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Request screen-sharing permission" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="WhatsApp: Android has no ordinary permission that grants another app access to WhatsApp messages. Family Guard will not scrape WhatsApp or use hidden accessibility collection."
+            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+    </LinearLayout>
+</ScrollView>

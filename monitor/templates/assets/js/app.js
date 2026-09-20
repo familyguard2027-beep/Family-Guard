@@ -30,6 +30,9 @@ function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
     navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
+function syncResponsiveShell() {
+  document.body.classList.toggle('mobile-shell', window.matchMedia('(max-width: 900px)').matches);
+}
 function injectShell() {
     const file = currentFile(), inPages = file !== "index.html";
     document.body.insertAdjacentHTML("afterbegin", `
@@ -109,6 +112,8 @@ function injectShell() {
         };
     }
       setupMobileMenu();
+      syncResponsiveShell();
+      window.addEventListener('resize', syncResponsiveShell);
 }
 
     function setupMobileMenu() {
@@ -247,16 +252,9 @@ function setupDeviceMenu() {
 }
 function bindDeviceModal() {
     if (!document.getElementById("bindModal")) {
-        document.body.insertAdjacentHTML("beforeend", `<div class="modal fade" id="bindModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Bind Authorized Device</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p class="text-muted small">Enter the pairing details for a device whose owner has authorized monitoring.</p><label class="form-label">Device name</label><input id="deviceName" class="form-control mb-3" placeholder="e.g. John's Galaxy S23"><label class="form-label">Device ID</label><input id="deviceId" class="form-control mb-3" placeholder="device-01"><label class="form-label">OS</label><input id="deviceOs" class="form-control mb-3" placeholder="Android 14"><label class="form-label">Battery</label><input id="deviceBattery" class="form-control mb-3" placeholder="78"><label class="form-label">Risk level</label><input id="deviceRisk" class="form-control mb-3" placeholder="Low"><div class="input-group mb-3"><span class="input-group-text">Pairing code</span><input id="pairingCode" class="form-control" placeholder="Generate or paste pairing code"><button class="btn btn-outline-secondary" type="button" id="copyPairingCode">Copy</button></div><button class="btn btn-sm btn-outline-dark" type="button" id="generatePairingCode">Generate pairing code</button></div><div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="try-btn" data-bs-dismiss="modal" id="submitBinding">Create Pairing</button></div></div></div></div>`);
+        document.body.insertAdjacentHTML("beforeend", `<div class="modal fade" id="bindModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Bind Authorized Device</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p class="text-muted small">Enter the child device details. After creation, the server generates a pairing code and secure consent link. Send both to the child; the code is entered on the child consent page.</p><label class="form-label">Device name</label><input id="deviceName" class="form-control mb-3" placeholder="e.g. Child's Galaxy"><label class="form-label">Device ID</label><input id="deviceId" class="form-control mb-3" placeholder="device-01"><label class="form-label">OS</label><input id="deviceOs" class="form-control mb-3" value="Android" placeholder="Android"><label class="form-label">Battery</label><input id="deviceBattery" class="form-control mb-3" placeholder="78"><label class="form-label">Risk level</label><input id="deviceRisk" class="form-control mb-3" value="Low" placeholder="Low"><div class="pairing-help small text-muted"><i class="bi bi-info-circle me-1"></i>The pairing code is generated after you click Create Pairing. It is not entered in this form. The device stays inactive until the child accepts consent.</div></div><div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="try-btn" id="submitBinding">Create Pairing</button></div></div></div></div>`);
     }
     document.querySelectorAll("[data-action='bind']").forEach(b => b.onclick = () => {
-        if (document.getElementById('pairingCode')) {
-            safeJsonFetch('/api/pairing-code/', { method: 'GET' }).then(r => r.json()).then(payload => {
-                const code = payload.pairing_code || '';
-                const field = document.getElementById('pairingCode');
-                if (field) field.value = code;
-            }).catch(() => {});
-        }
         new bootstrap.Modal(document.getElementById("bindModal")).show();
     });
     const createPairingButton = document.getElementById('submitBinding');
@@ -269,14 +267,12 @@ function bindDeviceModal() {
             const os = document.getElementById('deviceOs').value || 'Android';
             const battery = document.getElementById('deviceBattery').value || '0';
             const risk = document.getElementById('deviceRisk').value || 'Low';
-            const pairingCode = document.getElementById('pairingCode').value || '';
             formData.append('name', name);
             formData.append('device_id', deviceId);
             formData.append('os', os);
             formData.append('battery', battery);
             formData.append('risk_level', risk);
             formData.append('connection_status', 'Online');
-            if (pairingCode) formData.append('pairing_code', pairingCode);
             safeJsonFetch('/api/bind-device/', {
                 method: 'POST',
                 body: formData,
@@ -285,10 +281,10 @@ function bindDeviceModal() {
                 return r.json();
             }).then(payload => {
                 const msg = payload.detail || 'Device paired successfully.';
-                if (payload.device && payload.device.pairing_token) {
-                   const childUrl = `${location.origin}/child/consent/${payload.device.pairing_token}/`;
+                 if (payload.device && payload.device.pairing_token) {
+                   const childUrl = `${location.origin}${payload.consent_url || `/child/consent/${payload.device.pairing_token}/`}`;
                    const devicePage = '/pages/devices/';
-                   alert(`${msg}. Child consent URL: ${childUrl}`);
+                   alert(`${msg}\n\nPairing code: ${payload.device.pairing_code || 'Unavailable'}\nChild consent link: ${childUrl}\n\nThe device remains inactive until the child accepts consent.`);
                    window.location.href = devicePage;
                 } else {
                    alert(msg);
@@ -301,30 +297,6 @@ function bindDeviceModal() {
         };
     }
 
-    const copyPairingButton = document.getElementById('copyPairingCode');
-    if (copyPairingButton) {
-        copyPairingButton.onclick = () => {
-            const pairingField = document.getElementById('pairingCode');
-            if (!pairingField || !pairingField.value) {
-                return;
-            }
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(pairingField.value);
-            }
-            copyPairingButton.innerText = 'Copied';
-            setTimeout(() => copyPairingButton.innerText = 'Copy', 800);
-        };
-    }
-
-    const generatePairingButton = document.getElementById('generatePairingCode');
-    if (generatePairingButton) {
-        generatePairingButton.onclick = () => {
-            safeJsonFetch('/api/pairing-code/', { method: 'GET' }).then(r => r.json()).then(payload => {
-                const field = document.getElementById('pairingCode');
-                if (field) field.value = payload.pairing_code || '';
-            });
-        };
-    }
 }
 function wireInstallButton() {
     const installBtn = document.getElementById('installAppBtn');

@@ -36,11 +36,12 @@
                             <div class="border rounded p-3 mb-3">
                                 <div><strong>Device:</strong> {{ device.name }}</div>
                                 <div><strong>OS:</strong> {{ device.os }}</div>
-                                <div><strong>Pairing Code:</strong> {{ device.pairing_code }}</div>
-                                <div><strong>Pairing Token:</strong> {{ device.pairing_token }}</div>
                             </div>
                                                         <form method="post">
                                 {% csrf_token %}
+                                <label class="form-label" for="pairingCode">Pairing code from parent</label>
+                                <input class="form-control mb-3" type="text" name="pairing_code" id="pairingCode" placeholder="Example: PAIR-8F31A2C4" autocapitalize="characters" autocomplete="one-time-code" required>
+                                <div class="small text-muted mb-3">The parent creates this code after binding the device. It is used to confirm that this consent link belongs to the intended device.</div>
                                                                 <div class="consent-options">
                                                                     <label class="consent-option">
                                                                         <input class="form-check-input" type="checkbox" name="permissions" value="presence" checked required>

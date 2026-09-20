@@ -166,6 +166,7 @@ def _generate_unique_pairing_code():
     return f"PAIR-{secrets.token_hex(8).upper()}"
 
 
+@login_required(login_url='/login/')
 def pairing_code_api(request):
     if request.method != 'GET':
         return JsonResponse({'detail': 'Method not allowed'}, status=405)
@@ -186,6 +187,7 @@ def profile_api(request):
     })
 
 
+@login_required(login_url='/login/')
 @require_http_methods(['POST'])
 def bind_device(request):
     device_id = (request.POST.get('device_id') or '').strip()
@@ -284,6 +286,7 @@ def bind_device(request):
         'detail': 'Device paired successfully',
         'created': created,
         'redirect_url': '/pages/devices/',
+        'consent_url': f'/child/consent/{device.pairing_token}/',
         'device': _device_to_dict(device),
     }, status=201 if created else 200)
 
@@ -298,6 +301,12 @@ def child_consent_view(request, pairing_token):
         return HttpResponseRedirect(f'/child/dashboard/{device.pairing_token}/')
 
     if request.method == 'POST':
+        submitted_pairing_code = (request.POST.get('pairing_code') or '').strip().upper()
+        if submitted_pairing_code != (device.pairing_code or '').upper():
+            return render(request, 'child/consent.html', {
+                'device': device,
+                'error': 'Enter the pairing code supplied by the parent before accepting consent.',
+            })
         accepted = request.POST.get('consent_accepted') == 'on'
         selected_permissions = request.POST.getlist('permissions')
         allowed_permissions = {
