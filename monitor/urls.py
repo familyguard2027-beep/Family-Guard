@@ -15,4 +15,7 @@ urlpatterns = [
     path('profile/', views.profile_api, name='profile_api'),
     path('pairing-code/', views.pairing_code_api, name='pairing-code'),
     path('bind-device/', views.bind_device, name='bind-device'),
+    path('child/<uuid:pairing_token>/status/', views.child_status_api, name='child-status'),
+    path('child/<uuid:pairing_token>/heartbeat/', views.child_heartbeat_api, name='child-heartbeat'),
+    path('child/<uuid:pairing_token>/control/', views.child_control_api, name='child-control'),
 ]

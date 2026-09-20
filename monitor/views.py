@@ -12,6 +12,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 from django.db.models import Count, Max
 from django.db import IntegrityError
+from django.utils import timezone
 
 from .models import Activity, CallRecord, Device, SMSMessage, WhatsAppMessage
 
@@ -32,6 +33,7 @@ def _device_to_dict(device):
         'pairing_token': str(device.pairing_token),
         'consent_accepted': device.consent_accepted,
         'consent_required': device.consent_required,
+        'last_seen': device.last_seen.isoformat() if device.last_seen else None,
         'visible_on_child': device.visible_on_child,
         'hidden_on_child': device.hidden_on_child,
         'is_active': device.is_active,
@@ -244,11 +246,12 @@ def bind_device(request):
             existing_device.risk_level = risk_level
             existing_device.pairing_code = pairing_code
             existing_device.pairing_token = pairing_token
-            existing_device.consent_accepted = True
+            existing_device.consent_accepted = False
             existing_device.consent_required = True
             existing_device.visible_on_child = True
             existing_device.hidden_on_child = False
-            existing_device.is_active = True
+            existing_device.is_active = False
+            existing_device.last_seen = None
             existing_device.save()
             created = False
             device = existing_device
@@ -262,11 +265,11 @@ def bind_device(request):
                 risk_level=risk_level,
                 pairing_code=pairing_code,
                 pairing_token=pairing_token,
-                consent_accepted=True,
+                consent_accepted=False,
                 consent_required=True,
                 visible_on_child=True,
                 hidden_on_child=False,
-                is_active=True,
+                is_active=False,
             )
             created = True
     except IntegrityError:
@@ -289,6 +292,9 @@ def child_consent_view(request, pairing_token):
     except Device.DoesNotExist:
         return HttpResponse('Pairing token not found', status=404)
 
+    if request.method == 'GET' and device.consent_accepted and device.is_active:
+        return HttpResponseRedirect(f'/child/dashboard/{device.pairing_token}/')
+
     if request.method == 'POST':
         accepted = request.POST.get('consent_accepted') == 'on'
         if accepted:
@@ -297,11 +303,85 @@ def child_consent_view(request, pairing_token):
             device.visible_on_child = True
             device.hidden_on_child = False
             device.is_active = True
-            device.save(update_fields=['consent_accepted', 'consent_required', 'visible_on_child', 'hidden_on_child', 'is_active'])
-            return HttpResponseRedirect('/')
+            device.last_seen = timezone.now()
+            device.save(update_fields=['consent_accepted', 'consent_required', 'visible_on_child', 'hidden_on_child', 'is_active', 'last_seen'])
+            return HttpResponseRedirect(f'/child/dashboard/{device.pairing_token}/')
         return render(request, 'child/consent.html', {'device': device, 'error': 'Consent required to activate safety monitoring.'})
 
     return render(request, 'child/consent.html', {'device': device})
+
+
+def child_dashboard_view(request, pairing_token):
+    try:
+        device = Device.objects.get(pairing_token=pairing_token)
+    except Device.DoesNotExist:
+        return HttpResponse('Pairing token not found', status=404)
+    if not device.consent_accepted or not device.is_active:
+        return HttpResponseRedirect(f'/child/consent/{device.pairing_token}/')
+    device.last_seen = timezone.now()
+    device.connection_status = 'Online'
+    device.save(update_fields=['last_seen', 'connection_status'])
+    return render(request, 'child/dashboard.html', {'device': device})
+
+
+def _child_device(pairing_token):
+    try:
+        return Device.objects.get(pairing_token=pairing_token)
+    except Device.DoesNotExist:
+        return None
+
+
+def child_status_api(request, pairing_token):
+    device = _child_device(pairing_token)
+    if device is None:
+        return JsonResponse({'detail': 'Pairing token not found'}, status=404)
+    return JsonResponse({
+        'device': {
+            'name': device.name,
+            'device_id': device.device_id,
+            'os': device.os,
+            'battery': device.battery,
+            'connection_status': device.connection_status,
+            'consent_accepted': device.consent_accepted,
+            'is_active': device.is_active,
+            'last_seen': device.last_seen.isoformat() if device.last_seen else None,
+        },
+    })
+
+
+@require_http_methods(['POST'])
+def child_heartbeat_api(request, pairing_token):
+    device = _child_device(pairing_token)
+    if device is None:
+        return JsonResponse({'detail': 'Pairing token not found'}, status=404)
+    if not device.consent_accepted:
+        return JsonResponse({'detail': 'Consent is required before monitoring can start.'}, status=403)
+    if device.is_active:
+        device.last_seen = timezone.now()
+        device.connection_status = 'Online'
+        device.save(update_fields=['last_seen', 'connection_status'])
+    return JsonResponse({'ok': True, 'is_active': device.is_active})
+
+
+@require_http_methods(['POST'])
+def child_control_api(request, pairing_token):
+    device = _child_device(pairing_token)
+    if device is None:
+        return JsonResponse({'detail': 'Pairing token not found'}, status=404)
+    if not device.consent_accepted:
+        return JsonResponse({'detail': 'Consent is required before monitoring can start.'}, status=403)
+    action = request.POST.get('action')
+    if action == 'disconnect':
+        device.is_active = False
+        device.connection_status = 'Disconnected'
+    elif action == 'reconnect':
+        device.is_active = True
+        device.connection_status = 'Online'
+        device.last_seen = timezone.now()
+    else:
+        return JsonResponse({'detail': 'Unknown device action.'}, status=400)
+    device.save(update_fields=['is_active', 'connection_status', 'last_seen'])
+    return JsonResponse({'ok': True, 'is_active': device.is_active, 'connection_status': device.connection_status})
 
 
 @login_required(login_url='/login/')
@@ -351,6 +431,25 @@ def page_view(request, page_name):
 
 def manifest_view(request):
     return HttpResponse(open(os.path.join(os.getcwd(), 'manifest.json'), 'rb'), content_type='application/manifest+json')
+
+
+def child_manifest_view(request, pairing_token):
+    device = _child_device(pairing_token)
+    if device is None:
+        return JsonResponse({'detail': 'Pairing token not found'}, status=404)
+    return JsonResponse({
+        'name': f'Family Guard - {device.name}',
+        'short_name': device.name[:12],
+        'start_url': f'/child/dashboard/{device.pairing_token}/',
+        'scope': '/',
+        'display': 'standalone',
+        'background_color': '#f7f8fa',
+        'theme_color': '#ff982f',
+        'icons': [
+            {'src': '/static/icons/icon-192.png', 'sizes': '192x192', 'type': 'image/png'},
+            {'src': '/static/icons/icon-512.png', 'sizes': '512x512', 'type': 'image/png'},
+        ],
+    }, content_type='application/manifest+json')
 
 
 def service_worker_view(request):

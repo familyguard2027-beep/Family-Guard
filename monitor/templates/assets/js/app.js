@@ -370,9 +370,33 @@ function renderDashboardFromApi() {
           const valueTag = label.nextElementSibling;
           if (key && valueTag) valueTag.textContent = stats[key] ?? 0;
         });
+        const activityList = document.getElementById('recentActivityList');
+        if (activityList) {
+            activityList.innerHTML = (payload.timeline || []).length
+                ? payload.timeline.map(item => `<div class="py-3 border-bottom"><b class="small">${item.title || 'Device activity'}</b><div class="text-muted small">${item.device || 'Device'} &bull; ${item.time || ''}</div><div class="text-muted small">${item.summary || ''}</div></div>`).join('')
+                : '<div class="py-3 text-muted small">No authorized device activity yet.</div>';
+        }
+        const deviceList = document.getElementById('dashboardDeviceList');
+        if (deviceList) {
+            deviceList.innerHTML = (payload.devices || []).length
+                ? payload.devices.map(device => `<div class="py-3 border-bottom"><b class="small">${device.name || device.device_id}</b><div class="${device.is_active && device.connection_status === 'Online' ? 'text-success' : 'text-secondary'} small">&bull; ${device.is_active ? device.connection_status : (device.consent_accepted ? 'Disconnected' : 'Awaiting consent')}</div></div>`).join('')
+                : '<div class="py-3 text-muted small">No bound devices yet.</div>';
+        }
+          const online = (payload.devices || []).filter(device => device.is_active && device.connection_status === 'Online').length;
+          document.querySelectorAll('[data-live-device-count]').forEach(node => { node.textContent = online; });
       })
       .catch(() => {});
 }
+
+      function startAdminRealtimeRefresh() {
+        if (!document.body.classList.contains('admin-dashboard') && window.location.pathname !== '/pages/devices/') return;
+        setInterval(() => {
+          if (!document.hidden) {
+            renderDashboardFromApi();
+            if (window.location.pathname === '/pages/devices/') renderDevicesPage();
+          }
+        }, 10000);
+      }
 
 function renderWhatsAppPage() {
     safeJsonFetch('/api/whatsapp/', { method: 'GET' })
@@ -486,11 +510,11 @@ function renderDevicesPage() {
                 <div class="avatar" style="background: #20b7a5"><i class="bi bi-phone"></i></div>
                 <div>
                   <b>${d.name || d.device_id || 'Family Device'}</b>
-                  <div class="text-success small">● ${d.connection_status || d.connection || 'Online'}</div>
+                  <div class="${d.is_active && d.connection_status === 'Online' ? 'text-success' : 'text-secondary'} small">● ${d.is_active ? (d.connection_status || 'Online') : (d.consent_accepted ? 'Disconnected' : 'Awaiting consent')}</div>
                 </div>
               </div>
               <hr />
-              <div class="small text-muted">${d.os || 'Android'} • Battery ${d.battery || 0}% • Pairing ${d.pairing_code || 'PAIR-NEW'}</div>
+              <div class="small text-muted">${d.os || 'Android'} • Battery ${d.battery || 0}% • ${d.last_seen ? `Last seen ${new Date(d.last_seen).toLocaleString()}` : 'Not connected'}</div>
               <a href="/pages/live-screen/" class="btn btn-sm btn-outline-primary mt-3">View Device</a>
             </div>
           </div>
@@ -522,4 +546,5 @@ document.addEventListener("DOMContentLoaded", () => {
     bindDeviceModal();
     wireInstallButton();
     loadPageData();
+    startAdminRealtimeRefresh();
 });

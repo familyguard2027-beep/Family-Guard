@@ -17,6 +17,7 @@ class Device(models.Model):
     hidden_on_child = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     enrolled_at = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['name']

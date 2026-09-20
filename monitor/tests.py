@@ -45,6 +45,47 @@ class LoginTests(TestCase):
         self.assertEqual(response['Location'], '/')
 
 
+class ConsentFlowTests(TestCase):
+    def test_bound_device_waits_for_child_consent(self):
+        response = self.client.post(reverse('bind-device'), {
+            'device_id': 'child-001',
+            'name': 'Child Device',
+            'os': 'Android 14',
+            'battery': '80',
+            'connection_status': 'Online',
+            'risk_level': 'Low',
+        })
+        self.assertEqual(response.status_code, 201)
+        device = Device.objects.get(device_id='child-001')
+        self.assertFalse(device.consent_accepted)
+        self.assertFalse(device.is_active)
+
+        consent_response = self.client.post(
+            reverse('child_consent', args=[device.pairing_token]),
+            {'consent_accepted': 'on'},
+        )
+        self.assertRedirects(consent_response, f'/child/dashboard/{device.pairing_token}/', fetch_redirect_response=False)
+        device.refresh_from_db()
+        self.assertTrue(device.consent_accepted)
+        self.assertTrue(device.is_active)
+
+    def test_child_heartbeat_and_disconnect_are_token_scoped(self):
+        device = Device.objects.create(
+            device_id='child-002', name='Child Device', os='Android',
+            consent_accepted=True, is_active=True,
+        )
+        heartbeat = self.client.post(reverse('child-heartbeat', args=[device.pairing_token]))
+        self.assertEqual(heartbeat.status_code, 200)
+        device.refresh_from_db()
+        self.assertIsNotNone(device.last_seen)
+
+        disconnect = self.client.post(reverse('child-control', args=[device.pairing_token]), {'action': 'disconnect'})
+        self.assertEqual(disconnect.status_code, 200)
+        device.refresh_from_db()
+        self.assertFalse(device.is_active)
+        self.assertEqual(device.connection_status, 'Disconnected')
+
+
 class FamilyGuardApiTests(TestCase):
     def setUp(self):
         self.device = Device.objects.create(
