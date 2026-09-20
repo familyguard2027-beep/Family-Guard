@@ -31,6 +31,20 @@ class AdminCredentialCommandTests(TestCase):
         self.assertIsNone(authenticate(username='Admin2027', password='old-password'))
 
 
+class LoginTests(TestCase):
+    def test_login_accepts_username_case_from_mobile_keyboard(self):
+        User = get_user_model()
+        User.objects.create_user('admin2027', 'admin@example.com', 'new-password')
+
+        response = self.client.post(reverse('login'), {
+            'username': ' Admin2027 ',
+            'password': 'new-password',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/')
+
+
 class FamilyGuardApiTests(TestCase):
     def setUp(self):
         self.device = Device.objects.create(

@@ -65,12 +65,12 @@
         {% csrf_token %}
         <div class="field">
           <label for="username">Username</label>
-          <input id="username" name="username" required autocomplete="username">
+          <input id="username" name="username" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
         </div>
         <div class="field">
           <label for="password">Password</label>
           <div class="password-field">
-            <input id="password" name="password" type="password" required autocomplete="current-password">
+            <input id="password" name="password" type="password" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false">
             <button class="password-toggle" type="button" id="passwordToggle" aria-label="Show password" title="Show password"><i class="bi bi-eye"></i></button>
           </div>
         </div>

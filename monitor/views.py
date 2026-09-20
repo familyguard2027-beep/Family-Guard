@@ -4,6 +4,7 @@ import secrets
 from datetime import datetime
 
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
@@ -311,9 +312,14 @@ def index(request):
 @never_cache
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        username = (request.POST.get('username') or '').strip()
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
+        if user is None and username:
+            User = get_user_model()
+            matching_user = User.objects.filter(username__iexact=username, is_active=True).first()
+            if matching_user:
+                user = authenticate(request, username=matching_user.username, password=password)
         if user is not None and user.is_active:
             login(request, user)
             return HttpResponseRedirect('/')
