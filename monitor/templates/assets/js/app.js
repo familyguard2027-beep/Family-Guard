@@ -45,6 +45,7 @@ function injectShell() {
    <div class="device-menu" id="deviceMenu"></div>
   </div>
   <div class="top-center"><button class="try-btn install-btn" id="installAppBtn"><i class="bi bi-download me-2"></i><span>Install App</span></button></div>
+  <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-expanded="false" aria-controls="mobileMenu" title="Open menu"><i class="bi bi-list"></i><span>Menu</span></button>
   <div class="top-actions">
     <button class="bell" id="bellButton" title="Notifications"><i class="bi bi-bell"></i><span class="bell-dot"></span></button>
     <div class="user-widget" id="userWidget">
@@ -65,6 +66,16 @@ function injectShell() {
     <a class="logout-btn" href="/logout/" title="Logout admin">
       <i class="bi bi-box-arrow-right"></i><span>Logout</span>
     </a>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+   <nav class="mobile-nav">${NAV.map(n => `<a class="nav-link ${((inPages && file === n.href) || (file === "index.html" && n.label === "Dashboard")) ? "active" : ""}" href="${n.href}"><i class="bi ${n.icon}"></i><span>${n.label}</span></a>`).join("")}</nav>
+   <div class="mobile-menu-actions">
+    <button class="mobile-menu-action" id="mobileProfile" type="button"><i class="bi bi-person-circle"></i><span>Profile</span></button>
+    <button class="mobile-menu-action" id="mobileNotifications" type="button"><i class="bi bi-bell"></i><span>Notifications</span></button>
+    <button class="mobile-menu-action" id="mobileLanguage" type="button"><i class="bi bi-translate"></i><span>Language: EN</span></button>
+    <button class="mobile-menu-action" id="mobileInstall" type="button"><i class="bi bi-download"></i><span>Install App</span></button>
+    <a class="mobile-menu-action danger" href="/logout/"><i class="bi bi-box-arrow-right"></i><span>Logout</span></a>
+   </div>
   </div>
  </header>
  <div class="app-shell">
@@ -97,7 +108,36 @@ function injectShell() {
             document.querySelector('.app-shell').classList.toggle('sidebar-collapsed');
         };
     }
+      setupMobileMenu();
 }
+
+    function setupMobileMenu() {
+      const toggle = document.getElementById('mobileMenuToggle');
+      const menu = document.getElementById('mobileMenu');
+      if (!toggle || !menu) return;
+      toggle.addEventListener('click', event => {
+        event.stopPropagation();
+        const open = menu.classList.toggle('show');
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.innerHTML = open ? '<i class="bi bi-x-lg"></i><span>Close</span>' : '<i class="bi bi-list"></i><span>Menu</span>';
+      });
+      const profileName = document.getElementById('userName');
+      const mobileProfile = document.querySelector('#mobileProfile span');
+      if (profileName && mobileProfile) {
+        const observer = new MutationObserver(() => { mobileProfile.textContent = profileName.textContent || 'Profile'; });
+        observer.observe(profileName, { childList: true, characterData: true, subtree: true });
+      }
+      document.getElementById('mobileProfile')?.addEventListener('click', () => { window.location.href = '/pages/settings/'; });
+      document.getElementById('mobileNotifications')?.addEventListener('click', () => { window.location.href = '/pages/notifications/'; });
+      document.getElementById('mobileInstall')?.addEventListener('click', () => { document.getElementById('installAppBtn')?.click(); });
+      document.addEventListener('click', event => {
+        if (!menu.contains(event.target) && !toggle.contains(event.target)) {
+          menu.classList.remove('show');
+          toggle.setAttribute('aria-expanded', 'false');
+          toggle.innerHTML = '<i class="bi bi-list"></i><span>Menu</span>';
+        }
+      });
+    }
 
 function setupBackArrow() {
     const backArrow = document.getElementById('backArrow');
