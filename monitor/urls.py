@@ -18,4 +18,6 @@ urlpatterns = [
     path('child/<uuid:pairing_token>/status/', views.child_status_api, name='child-status'),
     path('child/<uuid:pairing_token>/heartbeat/', views.child_heartbeat_api, name='child-heartbeat'),
     path('child/<uuid:pairing_token>/control/', views.child_control_api, name='child-control'),
+    path('companion/enroll/', views.companion_enroll_api, name='companion-enroll'),
+    path('companion/<uuid:pairing_token>/heartbeat/', views.companion_heartbeat_api, name='companion-heartbeat'),
 ]

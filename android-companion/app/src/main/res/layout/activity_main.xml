@@ -19,7 +19,24 @@
             android:layout_marginTop="12dp"
             android:text="Review each permission. Android will show a separate system prompt or Settings screen. Nothing is enabled silently."
             android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+        <EditText
+            android:id="@+id/serverUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:hint="Render server URL"
+            android:inputType="textUri"
+            android:text="https://family-guard-xb0x.onrender.com" />
+        <EditText
+            android:id="@+id/pairingCode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Pairing code from parent"
+            android:inputType="textCapCharacters"
+            android:autofillHints="oneTimeCode" />
         <CheckBox android:id="@+id/consent" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="I reviewed and consent to the selected permissions." />
+        <Button android:id="@+id/enroll" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Connect this phone after web consent" />
+        <TextView android:id="@+id/connectionStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Not connected to Render" />
         <Button android:id="@+id/notifications" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Allow notifications" />
         <Button android:id="@+id/sms" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Request SMS permissions" />
         <Button android:id="@+id/calls" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Request call permissions" />

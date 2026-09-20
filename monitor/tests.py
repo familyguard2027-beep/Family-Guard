@@ -94,6 +94,24 @@ class ConsentFlowTests(TestCase):
         self.assertFalse(device.is_active)
         self.assertEqual(device.connection_status, 'Disconnected')
 
+    def test_android_companion_enrolls_only_after_consent(self):
+        pending = Device.objects.create(device_id='pending', name='Pending', pairing_code='PAIR-PENDING')
+        blocked = self.client.post(reverse('companion-enroll'), {'pairing_code': 'PAIR-PENDING', 'companion_id': 'android-1'})
+        self.assertEqual(blocked.status_code, 403)
+
+        pending.consent_accepted = True
+        pending.is_active = True
+        pending.save(update_fields=['consent_accepted', 'is_active'])
+        enrolled = self.client.post(reverse('companion-enroll'), {'pairing_code': 'PAIR-PENDING', 'companion_id': 'android-1'})
+        self.assertEqual(enrolled.status_code, 200)
+        self.assertEqual(enrolled.json()['token'], str(pending.pairing_token))
+
+        heartbeat = self.client.post(reverse('companion-heartbeat', args=[pending.pairing_token]), {
+            'companion_id': 'android-1',
+            'permissions': '{"sms": false, "notifications": true}',
+        })
+        self.assertEqual(heartbeat.status_code, 200)
+
 
 class FamilyGuardApiTests(TestCase):
     def setUp(self):

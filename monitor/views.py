@@ -1,6 +1,7 @@
 import os
 import uuid
 import secrets
+import json
 from datetime import datetime
 
 from django.contrib.auth import authenticate, login, logout
@@ -9,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.db.models import Count, Max
 from django.db import IntegrityError
@@ -404,6 +406,53 @@ def child_control_api(request, pairing_token):
         return JsonResponse({'detail': 'Unknown device action.'}, status=400)
     device.save(update_fields=['is_active', 'connection_status', 'last_seen'])
     return JsonResponse({'ok': True, 'is_active': device.is_active, 'connection_status': device.connection_status})
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def companion_enroll_api(request):
+    pairing_code = (request.POST.get('pairing_code') or '').strip().upper()
+    companion_id = (request.POST.get('companion_id') or '').strip()
+    if not pairing_code or not companion_id:
+        return JsonResponse({'detail': 'Pairing code and companion id are required.'}, status=400)
+    device = Device.objects.filter(pairing_code__iexact=pairing_code).first()
+    if device is None:
+        return JsonResponse({'detail': 'Pairing code not found.'}, status=404)
+    if not device.consent_accepted or not device.is_active:
+        return JsonResponse({'detail': 'The child must accept web consent before the Android companion can enroll.'}, status=403)
+    device.companion_id = companion_id
+    device.last_seen = timezone.now()
+    device.connection_status = 'Online'
+    device.save(update_fields=['companion_id', 'last_seen', 'connection_status'])
+    return JsonResponse({
+        'token': str(device.pairing_token),
+        'device_id': device.device_id,
+        'name': device.name,
+        'permissions': device.monitoring_permissions,
+    })
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def companion_heartbeat_api(request, pairing_token):
+    device = _child_device(pairing_token)
+    if device is None:
+        return JsonResponse({'detail': 'Device token not found.'}, status=404)
+    if not device.consent_accepted or not device.is_active:
+        return JsonResponse({'detail': 'Monitoring is not active for this device.'}, status=403)
+    companion_id = (request.POST.get('companion_id') or '').strip()
+    if not companion_id or companion_id != device.companion_id:
+        return JsonResponse({'detail': 'Companion is not enrolled for this device.'}, status=403)
+    permission_status = request.POST.get('permissions') or '{}'
+    try:
+        permissions = json.loads(permission_status)
+    except json.JSONDecodeError:
+        return JsonResponse({'detail': 'Invalid permission status.'}, status=400)
+    device.companion_permissions = permissions
+    device.last_seen = timezone.now()
+    device.connection_status = 'Online'
+    device.save(update_fields=['companion_permissions', 'last_seen', 'connection_status'])
+    return JsonResponse({'ok': True, 'is_active': device.is_active})
 
 
 @login_required(login_url='/login/')

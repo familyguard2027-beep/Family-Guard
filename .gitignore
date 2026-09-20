@@ -18,3 +18,7 @@ __pycache__/
 htmlcov/
 
 .vscode/
+
+android-companion/local.properties
+android-companion/.gradle/
+android-companion/**/build/

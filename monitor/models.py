@@ -20,6 +20,8 @@ class Device(models.Model):
     last_seen = models.DateTimeField(null=True, blank=True)
     monitoring_permissions = models.JSONField(default=dict, blank=True)
     child_notifications_enabled = models.BooleanField(default=False)
+    companion_id = models.CharField(max_length=128, blank=True, default='')
+    companion_permissions = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ['name']
