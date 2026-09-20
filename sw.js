@@ -1,4 +1,4 @@
-const CACHE_NAME = 'family-guard-v4';
+const CACHE_NAME = 'family-guard-v5';
 const ASSETS = [
   '/',
   '/static/css/app.css',
