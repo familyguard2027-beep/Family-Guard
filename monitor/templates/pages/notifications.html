@@ -1,0 +1,74 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta property="og:title" content="Family Guard" />
+    <meta property="og:description" content="Family Guard parental safety dashboard" />
+    <meta property="og:image" content="/static/icons/icon-512.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="/pages/notifications/" />
+    <title>Notifications — Device Monitor</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script defer src="{% static 'js/app.js' %}"></script>
+  </head>
+  <body>
+    <section class="notice">
+      <span>Family Guard device pairing is ready. Bind an authorized device to begin.</span>
+      <button class="bind-btn" data-action="bind">Bind Device</button>
+    </section>
+    <main class="page-content">
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Notifications <span class="badge text-bg-danger">3</span></span>
+          <button
+            class="btn btn-sm btn-link"
+            onclick="
+              document
+                .querySelectorAll('.n')
+                .forEach((x) => x.classList.remove('bg-light'))
+            "
+          >
+            Mark all as read
+          </button>
+        </div>
+        <div class="p-0" id="notifyRows">
+          <div class="n p-3 border-bottom bg-light d-flex gap-3">
+            <div class="avatar" style="background: #25c95b"><i class="bi bi-whatsapp"></i> </div>
+            <div>
+              <b class="small">New WhatsApp message</b>
+              <div class="small text-muted">Emily • 2 minutes ago</div>
+            </div>
+          </div>
+          <div class="n p-3 border-bottom bg-light d-flex gap-3">
+            <div class="avatar" style="background: #ee5d67"><i class="bi bi-telephone"></i></div>
+            <div>
+              <b class="small">Call recording available</b>
+              <div class="small text-muted">Jane • 23 minutes ago</div>
+            </div>
+          </div>
+          <div class="n p-3 border-bottom bg-light d-flex gap-3">
+            <div class="avatar" style="background: #43aeea"><i class="bi bi-phone"></i></div>
+            <div>
+              <b class="small">Device connected</b>
+              <div class="small text-muted">
+                John's Galaxy S23 • 41 minutes ago
+              </div>
+            </div>
+          </div>
+          <div class="n p-3 border-bottom d-flex gap-3">
+            <div class="avatar" style="background: #43aeea"><i class="bi bi-chat-square-text"></i></div>
+            <div>
+              <b class="small">New SMS message</b>
+              <div class="small text-muted">MTN • 1 hour ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
