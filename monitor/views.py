@@ -315,7 +315,7 @@ def login_view(request):
         if user is not None and user.is_active:
             login(request, user)
             return HttpResponseRedirect('/')
-        return render(request, 'login.html', {'error': 'Invalid local admin credentials.'})
+        return render(request, 'login.html', {'error': 'Invalid admin credentials.'})
     return render(request, 'login.html')
 
 

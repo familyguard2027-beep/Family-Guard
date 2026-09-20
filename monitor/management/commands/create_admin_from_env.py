@@ -11,14 +11,22 @@ class Command(BaseCommand):
         username = os.getenv('ADMIN_USERNAME', 'Admin111')
         email = os.getenv('ADMIN_EMAIL', 'admin111@gmail.com')
         password = os.getenv('ADMIN_PASSWORD', 'Admin1234')
-        if User.objects.filter(username=username).exists():
-            user = User.objects.get(username=username)
-            user.email = email
-            user.is_superuser = True
-            user.is_staff = True
-            user.set_password(password)
-            user.save()
-            self.stdout.write(self.style.SUCCESS(f'Updated admin {username}'))
-        else:
-            user = User.objects.create_superuser(username=username, email=email, password=password)
-            self.stdout.write(self.style.SUCCESS(f'Created admin {username}'))
+        user, created = User.objects.get_or_create(
+            username=username,
+            defaults={'email': email, 'is_staff': True, 'is_superuser': True},
+        )
+        user.email = email
+        user.is_superuser = True
+        user.is_staff = True
+        user.is_active = True
+        user.set_password(password)
+        user.save()
+
+        User.objects.exclude(pk=user.pk).filter(is_superuser=True).update(
+            is_active=False,
+            is_staff=False,
+            is_superuser=False,
+        )
+
+        action = 'Created' if created else 'Updated'
+        self.stdout.write(self.style.SUCCESS(f'{action} admin {username}'))

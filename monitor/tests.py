@@ -1,7 +1,34 @@
+import os
+from unittest.mock import patch
+
+from django.contrib.auth import authenticate, get_user_model
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
 from .models import Activity, CallRecord, Device, SMSMessage, WhatsAppMessage
+
+
+class AdminCredentialCommandTests(TestCase):
+    def test_command_disables_previous_admin_and_updates_configured_admin(self):
+        User = get_user_model()
+        old_admin = User.objects.create_superuser('Admin2027', 'old@example.com', 'old-password')
+
+        with patch.dict(os.environ, {
+            'ADMIN_USERNAME': 'admin2027',
+            'ADMIN_EMAIL': 'new@example.com',
+            'ADMIN_PASSWORD': 'new-password',
+        }, clear=False):
+            call_command('create_admin_from_env')
+
+        old_admin.refresh_from_db()
+        new_admin = User.objects.get(username='admin2027')
+        self.assertFalse(old_admin.is_active)
+        self.assertFalse(old_admin.is_superuser)
+        self.assertTrue(new_admin.is_active)
+        self.assertTrue(new_admin.is_superuser)
+        self.assertIsNotNone(authenticate(username='admin2027', password='new-password'))
+        self.assertIsNone(authenticate(username='Admin2027', password='old-password'))
 
 
 class FamilyGuardApiTests(TestCase):
